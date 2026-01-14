@@ -1,56 +1,123 @@
 export const dashboardLinks = [
+  // SEO Performance (as per your request)
   {
     id: 1,
-    title: "Sales Dashboard",
-    description: "Real-time sales metrics and performance indicators",
-    url: "https://lookerstudio.google.com/your-dashboard-link-1",
-    category: "Business",
-    icon: "📊",
-    backgroundColor: "#4f46e5",
+    title: "SEO Performance Dashboards",
+    description:
+      "Comprehensive SEO metrics, rankings, and performance analytics",
+    url: "https://lookerstudio.google.com/s/tmdR-oCAVxI",
+    category: "SEO",
+    icon: "🔍",
+    backgroundColor: "#4CAF50",
+    tags: ["analytics", "performance", "rankings", "seo"],
   },
+
+  // Project Pages (couple of pages for each project)
   {
     id: 2,
-    title: "Marketing Analytics",
-    description: "Campaign performance and ROI analysis",
-    url: "https://lookerstudio.google.com/your-dashboard-link-2",
-    category: "Marketing",
-    icon: "📈",
-    backgroundColor: "#059669",
+    title: "Zanussi Requests ",
+    description: "Detailed metrics and analytics of requests for Zanussi site",
+    url: "https://lookerstudio.google.com/s/o1XBdxBhICE",
+    category: "Client Requests",
+    icon: "📊",
+    backgroundColor: "#2196F3",
+    tags: ["zanussi", "analytics", "performance"],
   },
   {
     id: 3,
-    title: "Customer Insights",
-    description: "Customer behavior and segmentation analysis",
-    url: "https://lookerstudio.google.com/your-dashboard-link-3",
-    category: "Customer",
-    icon: "👥",
-    backgroundColor: "#dc2626",
+    title: "Propster Requests ", //, Kent Collede, IM Solutions, Core Construction and HNI
+    description: "Detailed metrics and analytics of requests for Propster site",
+    url: "https://lookerstudio.google.com/s/lWalxcXLfd8",
+    category: "Client Requests",
+    icon: "📈",
+    backgroundColor: "#2196F3",
+    tags: ["propster", "analytics", "performance"],
   },
-  {
+
+  // Client Requests Tracking (two separate links)
+  /*{
     id: 4,
-    title: "Financial Reports",
-    description: "Financial KPIs and budget tracking",
-    url: "https://lookerstudio.google.com/your-dashboard-link-4",
-    category: "Finance",
-    icon: "💰",
-    backgroundColor: "#d97706",
+    title: "Client Requests Tracker",
+    description: "Track all incoming client requests and resolution status",
+    url: "https://lookerstudio.google.com/reporting/client-requests-id",
+    category: "Client Requests",
+    icon: "👥",
+    backgroundColor: "#9C27B0",
+    tags: ["clients", "requests", "tracking"],
   },
   {
     id: 5,
-    title: "Operations Monitor",
-    description: "Operational efficiency and logistics",
-    url: "https://lookerstudio.google.com/your-dashboard-link-5",
-    category: "Operations",
-    icon: "⚙️",
-    backgroundColor: "#7c3aed",
-  },
+    title: "Client Support Dashboard",
+    description: "Client support metrics and response time analytics",
+    url: "https://lookerstudio.google.com/reporting/client-support-id",
+    category: "Client Requests",
+    icon: "🛟",
+    backgroundColor: "#9C27B0",
+    tags: ["support", "clients", "response"],
+  },*/
+
+  // Forms (as per your request)
   {
     id: 6,
-    title: "HR Analytics",
-    description: "Employee performance and HR metrics",
-    url: "https://lookerstudio.google.com/your-dashboard-link-6",
-    category: "HR",
+    title: "Zanussi Requests Form",
+    description: "Submit Zanussi project requests and issues",
+    url: "https://script.google.com/macros/s/AKfycbymkqgeNlLsLTEyfaEUmLUXfILKm57IFoUD2YNihm5mr1yrTJvsn3n59DDLvvdQvzfZjg/exec",
+    category: "Forms",
+    icon: "📝",
+    backgroundColor: "#ff6600",
+    tags: ["zanussi", "requests", "form", "submission"],
+  },
+  {
+    id: 7,
+    title: "Project Requests Form",
+    description: "Submit new project requests or modifications",
+    url: "https://script.google.com/macros/s/AKfycbw70pFy667_2SxINH5740lscv8h9RS9eGzC6utZJw5AoOcn1mMGC4wX95LOGl5CrCljtA/exec",
+    category: "Forms",
+    icon: "🚀",
+    backgroundColor: "#ff6600",
+    tags: ["projects", "requests", "submission"],
+  },
+  {
+    id: 8,
+    title: "Weekly KPI Submission",
+    description: "Employee weekly performance KPI tracking and submission",
+    url: "https://script.google.com/macros/s/AKfycbwRNBSDi0LWmMCfEUY3N-ni8rrL1HiUArT0YHKRjco_HeSq-wKHmht-K8-BDrjl1hvjMw/exec",
+    category: "Forms",
+    icon: "⭐",
+    backgroundColor: "#ff6600",
+    tags: ["kpi", "performance", "employees", "weekly"],
+  },
+
+  // Employee KPI Dashboard
+  {
+    id: 9,
+    title: "Employee Performance Dashboard",
+    description:
+      "Weekly KPI tracking and performance analytics for all employees",
+    url: "https://lookerstudio.google.com/s/gDZZqoCmGGU",
+    category: "Employee KPI",
     icon: "👨‍💼",
-    backgroundColor: "#0891b2",
+    backgroundColor: "#FF9800",
+    tags: ["employees", "performance", "kpi", "analytics"],
   },
 ];
+
+// Helper function to get links by category
+export const getLinksByCategory = (category) => {
+  return dashboardLinks.filter((link) => link.category === category);
+};
+
+// Get all unique categories
+export const getAllCategories = () => {
+  const categories = dashboardLinks.map((link) => link.category);
+  return [...new Set(categories)];
+};
+
+// Count links per category
+export const getCategoryCounts = () => {
+  const counts = {};
+  dashboardLinks.forEach((link) => {
+    counts[link.category] = (counts[link.category] || 0) + 1;
+  });
+  return counts;
+};

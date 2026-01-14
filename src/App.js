@@ -1,74 +1,92 @@
 import React, { useState } from "react";
 import "./styles/App.css";
-import Header from "./components/Header";
-import LinkCard from "./components/LinkCard";
-import Footer from "./components/Footer";
-import { dashboardLinks } from "./data/links";
-import { searchLinks, getUniqueCategories } from "./utils/helpers";
+import Header from "./components/Header/Header";
+import LinkCard from "./components/LinkCard/LinkCard";
+import FilterBar from "./components/FilterBar/FilterBar";
+import CategorySection from "./components/CategorySection/CategorySection";
+import Footer from "./components/Footer/Footer";
+import {
+  dashboardLinks,
+  getAllCategories,
+  getLinksByCategory,
+} from "./data/links";
 
 function App() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
 
-  const filteredLinks = searchLinks(
-    selectedCategory
-      ? dashboardLinks.filter((link) => link.category === selectedCategory)
-      : dashboardLinks,
-    searchTerm
-  );
+  const categories = getAllCategories();
 
-  const categories = getUniqueCategories(dashboardLinks);
+  // Filter logic
+  const filteredLinks = selectedCategory
+    ? getLinksByCategory(selectedCategory)
+    : dashboardLinks;
+
+  const searchedLinks = searchTerm
+    ? filteredLinks.filter(
+        (link) =>
+          link.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          link.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          link.tags.some((tag) =>
+            tag.toLowerCase().includes(searchTerm.toLowerCase())
+          )
+      )
+    : filteredLinks;
 
   return (
     <div className="App">
       <Header />
 
-      {/* Search and Filter Section */}
-      <div className="filters-container">
-        <div className="search-box">
-          <input
-            type="text"
-            placeholder="Search dashboards..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="search-input"
-          />
-        </div>
-
-        <div className="category-filters">
-          <button
-            className={`category-btn ${!selectedCategory ? "active" : ""}`}
-            onClick={() => setSelectedCategory("")}
-          >
-            All
-          </button>
-          {categories.map((category) => (
-            <button
-              key={category}
-              className={`category-btn ${
-                selectedCategory === category ? "active" : ""
-              }`}
-              onClick={() => setSelectedCategory(category)}
-            >
-              {category}
-            </button>
-          ))}
-        </div>
-      </div>
+      <FilterBar
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        selectedCategory={selectedCategory}
+        setSelectedCategory={setSelectedCategory}
+        categories={categories}
+      />
 
       <main className="main-content">
-        {filteredLinks.length > 0 ? (
-          <div className="links-container">
-            {filteredLinks.map((link) => (
-              <LinkCard key={link.id} {...link} />
-            ))}
+        {selectedCategory ? (
+          // Show filtered view
+          <div className="filtered-view">
+            <h2 className="category-title">
+              {selectedCategory} ({searchedLinks.length})
+            </h2>
+            <div className="links-grid">
+              {searchedLinks.map((link) => (
+                <LinkCard key={link.id} {...link} />
+              ))}
+            </div>
           </div>
         ) : (
+          // Show categorized view
+          <div className="categorized-view">
+            {categories.map((category) => {
+              const categoryLinks = getLinksByCategory(category);
+              return (
+                <CategorySection
+                  key={category}
+                  category={category}
+                  links={categoryLinks}
+                  limit={4}
+                />
+              );
+            })}
+          </div>
+        )}
+
+        {searchedLinks.length === 0 && (
           <div className="no-results">
-            <p>No dashboards found matching your search.</p>
+            <div className="no-results-icon">🔍</div>
+            <h3>No results found</h3>
+            <p>
+              Try adjusting your search or filter to find what you're looking
+              for.
+            </p>
           </div>
         )}
       </main>
+
       <Footer />
     </div>
   );
