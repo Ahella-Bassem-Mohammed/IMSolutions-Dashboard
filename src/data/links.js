@@ -2,14 +2,37 @@ export const dashboardLinks = [
   // SEO Performance (as per your request)
   {
     id: 1,
-    title: "SEO Performance Dashboards",
+    title: "IM Holding Arabia Audit",
     description:
       "Comprehensive SEO metrics, rankings, and performance analytics",
-    url: "https://lookerstudio.google.com/s/tmdR-oCAVxI",
+    url: "https://lookerstudio.google.com/reporting/cd2cda87-5149-459d-a423-2f5808c55ffe",
     category: "SEO",
     icon: "🔍",
     backgroundColor: "#4CAF50",
-    tags: ["analytics", "performance", "rankings", "seo"],
+    tags: ["analytics", "performance", "rankings", "seo", "im holding"],
+  },
+  {
+    id: 11,
+    title: "Core Construction Audit ",
+    description:
+      "Comprehensive SEO metrics, rankings, and performance analytics",
+    url: "https://lookerstudio.google.com/reporting/f4988046-c9c4-4148-9ed1-5310c744fee9",
+    category: "SEO",
+    icon: "🔍",
+    backgroundColor: "#4CAF50",
+    tags: ["analytics", "performance", "rankings", "seo", "im holding"],
+  },
+
+  {
+    id: 12,
+    title: "HNI UAE Audit ",
+    description:
+      "Comprehensive SEO metrics, rankings, and performance analytics",
+    url: "https://lookerstudio.google.com/reporting/f4988046-c9c4-4148-9ed1-5310c744fee9",
+    category: "SEO",
+    icon: "🔍",
+    backgroundColor: "#4CAF50",
+    tags: ["analytics", "performance", "rankings", "seo", "hni"],
   },
 
   // Project Pages (couple of pages for each project)
