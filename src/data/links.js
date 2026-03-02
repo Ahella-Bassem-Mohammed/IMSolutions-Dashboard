@@ -35,6 +35,28 @@ export const dashboardLinks = [
     tags: ["analytics", "performance", "rankings", "seo", "hni"],
   },
 
+  {
+    id: 13,
+    title: "HNI SA Audit ",
+    description:
+      "Comprehensive SEO metrics, rankings, and performance analytics",
+    url: "https://lookerstudio.google.com/reporting/cbccfd86-f356-4f1f-a816-b33758f95bee",
+    category: "SEO",
+    icon: "🔍",
+    backgroundColor: "#4CAF50",
+    tags: ["analytics", "performance", "rankings", "seo", "hni"],
+  },
+  {
+    id: 14,
+    title: "Kent College Audit ",
+    description:
+      "Comprehensive SEO metrics, rankings, and performance analytics",
+    url: "https://lookerstudio.google.com/reporting/751ade1c-e484-48ba-ba5f-239992e519df",
+    category: "SEO",
+    icon: "🔍",
+    backgroundColor: "#4CAF50",
+    tags: ["analytics", "performance", "rankings", "seo", "hni"],
+  },
   // Project Pages (couple of pages for each project)
   {
     id: 2,
