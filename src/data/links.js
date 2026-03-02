@@ -55,7 +55,7 @@ export const dashboardLinks = [
     category: "SEO",
     icon: "🔍",
     backgroundColor: "#4CAF50",
-    tags: ["analytics", "performance", "rankings", "seo", "hni"],
+    tags: ["analytics", "performance", "rankings", "seo", "kent"],
   },
   // Project Pages (couple of pages for each project)
   {
