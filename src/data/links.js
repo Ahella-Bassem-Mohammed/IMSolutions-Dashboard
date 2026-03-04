@@ -57,6 +57,17 @@ export const dashboardLinks = [
     backgroundColor: "#4CAF50",
     tags: ["analytics", "performance", "rankings", "seo", "kent"],
   },
+  {
+    id: 15,
+    title: "IM Solutions Audit ",
+    description:
+      "Comprehensive SEO metrics, rankings, and performance analytics",
+    url: "https://lookerstudio.google.com/reporting/b78cc8da-9878-4660-8abc-fbe5ec2a31a4",
+    category: "SEO",
+    icon: "🔍",
+    backgroundColor: "#4CAF50",
+    tags: ["analytics", "performance", "rankings", "seo", "im","solutions"],
+  },
   // Project Pages (couple of pages for each project)
   {
     id: 2,
