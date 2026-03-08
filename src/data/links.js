@@ -66,7 +66,18 @@ export const dashboardLinks = [
     category: "SEO",
     icon: "🔍",
     backgroundColor: "#4CAF50",
-    tags: ["analytics", "performance", "rankings", "seo", "im","solutions"],
+    tags: ["analytics", "performance", "rankings", "seo", "im", "solutions"],
+  },
+  {
+    id: 16,
+    title: "Hardware Egypt Audit ",
+    description:
+      "Comprehensive SEO metrics, rankings, and performance analytics",
+    url: "https://lookerstudio.google.com/reporting/c2bf8e06-2942-4658-a3f2-6d1fdb58b510",
+    category: "SEO",
+    icon: "🔍",
+    backgroundColor: "#4CAF50",
+    tags: ["analytics", "performance", "rankings", "seo", "hardware"],
   },
   // Project Pages (couple of pages for each project)
   {
