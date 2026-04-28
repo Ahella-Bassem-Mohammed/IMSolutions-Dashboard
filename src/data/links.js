@@ -79,6 +79,35 @@ export const dashboardLinks = [
     backgroundColor: "#4CAF50",
     tags: ["analytics", "performance", "rankings", "seo", "hardware"],
   },
+  {
+    id: 17,
+    title: "SEO Project KPIs",
+    description:
+      "Comprehensive SEO metrics Tracking, KPI evaluation, and performance analytics",
+    url: "https://datastudio.google.com/reporting/f1a82a8b-b3d9-4b0f-9222-90b1e957e157",
+    category: "SEO",
+    icon: "🔍",
+    backgroundColor: "#4CAF50",
+    tags: [
+      "IM Holding Arabia",
+      "KPIs",
+      "rankings",
+      "seo",
+      "The Propster",
+      "Core Construction",
+    ],
+  },
+  {
+    id: 18,
+    title: "The Box Audit",
+    description:
+      "Comprehensive SEO metrics Tracking, KPI evaluation, and performance analytics",
+    url: "https://datastudio.google.com/reporting/3b691195-5d28-4b1c-ba5f-e930e3e45a99",
+    category: "SEO",
+    icon: "🔍",
+    backgroundColor: "#4CAF50",
+    tags: ["The Box", "rankings", "seo"],
+  },
   // Project Pages (couple of pages for each project)
   {
     id: 2,
