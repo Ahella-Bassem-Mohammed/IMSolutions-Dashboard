@@ -41,8 +41,15 @@ const Admin = () => {
   };
 
   useEffect(() => {
+    if (user && user.role !== "admin") {
+      navigate("/");
+      return;
+    }
+    if (!token || user?.role !== "admin") {
+      return;
+    }
     fetchUsers();
-  }, []);
+  }, [navigate, token, user]);
 
   // Add new user
   const addUser = async (e) => {
@@ -74,7 +81,7 @@ const Admin = () => {
   };
 
   // Redirect non-admin users
-  if (user?.role !== "admin") {
+  if (user && user.role !== "admin") {
     return (
       <div className="access-denied">
         <h2>Access Denied</h2>
