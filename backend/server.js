@@ -90,6 +90,9 @@ async function startServer() {
     console.log(
       `📊 Links endpoint: http://localhost:${PORT}/api/links (protected)`,
     );
+    console.log(
+      `👤 Admin endpoint: http://localhost:${PORT}/api/admin/users (protected)`,
+    );
     console.log(`\n💡 Test with: curl http://localhost:${PORT}/api/health\n`);
   });
 }

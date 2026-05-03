@@ -30,7 +30,12 @@ const Admin = () => {
       setUsers(response.data);
     } catch (err) {
       setUsers([]);
-      setError(err.response?.data?.message || "Failed to fetch users");
+      const status = err.response?.status;
+      setError(
+        status === 404
+          ? "Admin API returned 404. Stop and restart the backend (node server.js) so /api/admin routes load."
+          : err.response?.data?.message || "Failed to fetch users",
+      );
       console.error("Failed to fetch users", err);
     }
   };
@@ -59,7 +64,12 @@ const Admin = () => {
       });
       fetchUsers();
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to create user");
+      const status = err.response?.status;
+      setError(
+        status === 404
+          ? "Admin API returned 404. Restart the backend server, then try again."
+          : err.response?.data?.message || "Failed to create user",
+      );
     }
   };
 
