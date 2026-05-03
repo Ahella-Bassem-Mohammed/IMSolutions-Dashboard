@@ -1,4 +1,4 @@
-// Backend-compatible version of dashboard links
+﻿// Backend-compatible version of dashboard links
 const dashboardLinks = [
   // SEO Performance
   {
