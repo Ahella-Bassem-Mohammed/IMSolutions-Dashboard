@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
 
@@ -7,86 +6,129 @@ const API_URL = "http://localhost:5000/api";
 
 const Admin = () => {
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
-  const [newUser, setNewUser] = useState({
-    email: "",
-    password: "",
-    full_name: "",
-    role: "viewer",
-    department: "",
+  const [dashboards, setDashboards] = useState([]);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [assignedDashboards, setAssignedDashboards] = useState([]);
+  const [newDashboard, setNewDashboard] = useState({
+    title: "",
+    description: "",
+    url: "",
+    category: "",
+    icon: "🔗",
+    backgroundColor: "#4CAF50",
+    tags: [],
   });
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const token = localStorage.getItem("token");
 
-  // Fetch all users
+  // Only fetch admin data if user is admin
   const fetchUsers = async () => {
-    setError("");
+    if (user?.role !== "admin") return;
     try {
-      const response = await axios.get(`${API_URL}/admin/users`, {
+      const res = await axios.get(`${API_URL}/admin/users`, {
         headers: { "x-auth-token": token },
       });
-      setUsers(response.data);
+      setUsers(res.data);
     } catch (err) {
-      setUsers([]);
-      const status = err.response?.status;
-      setError(
-        status === 404
-          ? "Admin API returned 404. Stop and restart the backend (node server.js) so /api/admin routes load."
-          : err.response?.data?.message || "Failed to fetch users",
-      );
-      console.error("Failed to fetch users", err);
+      console.error(err);
+    }
+  };
+
+  const fetchDashboards = async () => {
+    if (user?.role !== "admin") return;
+    try {
+      const res = await axios.get(`${API_URL}/admin/dashboards`, {
+        headers: { "x-auth-token": token },
+      });
+      setDashboards(res.data);
+    } catch (err) {
+      console.error(err);
     }
   };
 
   useEffect(() => {
-    if (user && user.role !== "admin") {
-      navigate("/");
-      return;
+    if (user?.role === "admin") {
+      fetchUsers();
+      fetchDashboards();
     }
-    if (!token || user?.role !== "admin") {
-      return;
-    }
-    fetchUsers();
-  }, [navigate, token, user]);
+  }, [user]);
 
-  // Add new user
-  const addUser = async (e) => {
-    e.preventDefault();
-    setMessage("");
-    setError("");
-
+  const loadUserAssignments = async (userId) => {
+    if (user?.role !== "admin") return;
     try {
-      await axios.post(`${API_URL}/admin/users`, newUser, {
+      const res = await axios.get(
+        `${API_URL}/admin/user-dashboards/${userId}`,
+        { headers: { "x-auth-token": token } },
+      );
+      setAssignedDashboards(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleSelectUser = (user) => {
+    setSelectedUser(user);
+    loadUserAssignments(user.id);
+  };
+
+  const assignDashboard = async (dashboardId) => {
+    try {
+      await axios.post(
+        `${API_URL}/admin/assign-dashboard`,
+        { userId: selectedUser.id, dashboardId },
+        { headers: { "x-auth-token": token } },
+      );
+      loadUserAssignments(selectedUser.id);
+      setMessage("Dashboard assigned");
+    } catch (err) {
+      setError("Assignment failed");
+    }
+  };
+
+  const removeAssignment = async (dashboardId) => {
+    try {
+      await axios.delete(`${API_URL}/admin/assign-dashboard`, {
+        headers: { "x-auth-token": token },
+        data: { userId: selectedUser.id, dashboardId },
+      });
+      loadUserAssignments(selectedUser.id);
+      setMessage("Dashboard unassigned");
+    } catch (err) {
+      setError("Removal failed");
+    }
+  };
+
+  const addDashboard = async (e) => {
+    e.preventDefault();
+    try {
+      await axios.post(`${API_URL}/admin/dashboards`, newDashboard, {
         headers: { "x-auth-token": token },
       });
-      setMessage(`User ${newUser.email} created successfully!`);
-      setNewUser({
-        email: "",
-        password: "",
-        full_name: "",
-        role: "viewer",
-        department: "",
+      setMessage("Dashboard added");
+      fetchDashboards();
+      setNewDashboard({
+        title: "",
+        description: "",
+        url: "",
+        category: "",
+        icon: "🔗",
+        backgroundColor: "#4CAF50",
+        tags: [],
       });
-      fetchUsers();
     } catch (err) {
-      const status = err.response?.status;
-      setError(
-        status === 404
-          ? "Admin API returned 404. Restart the backend server, then try again."
-          : err.response?.data?.message || "Failed to create user",
-      );
+      setError("Failed to add dashboard");
     }
   };
 
   // Redirect non-admin users
-  if (user && user.role !== "admin") {
+  if (user?.role !== "admin") {
     return (
-      <div className="access-denied">
+      <div style={{ padding: "2rem", textAlign: "center" }}>
         <h2>Access Denied</h2>
         <p>You don't have permission to view this page.</p>
-        <button type="button" className="btn btn-primary" onClick={() => navigate("/")}>
+        <button onClick={() => (window.location.href = "/")}>
           Go to Dashboard
         </button>
       </div>
@@ -94,118 +136,283 @@ const Admin = () => {
   }
 
   return (
-    <div className="admin-page">
-      <div className="admin-header">
+    <div style={{ padding: "2rem", maxWidth: "1400px", margin: "0 auto" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          marginBottom: "2rem",
+        }}
+      >
         <h1>Admin Panel</h1>
-        <div>
-          <button
-            type="button"
-            onClick={() => navigate("/")}
-            className="btn btn-primary"
-          >
-            Back to Dashboard
-          </button>
-          <button
-            type="button"
-            onClick={logout}
-            className="btn btn-muted"
-          >
-            Logout
-          </button>
-        </div>
+        <button
+          onClick={logout}
+          style={{
+            padding: "0.5rem 1rem",
+            backgroundColor: "#e74c3c",
+            color: "white",
+            border: "none",
+            borderRadius: "4px",
+          }}
+        >
+          Logout
+        </button>
       </div>
 
-      {/* Add User Form */}
-      <div className="admin-card">
-        <h2>Add New User</h2>
-        {message && <div className="form-success">{message}</div>}
-        {error && <div className="form-error">{error}</div>}
-        <form onSubmit={addUser}>
-          <div className="admin-form-grid">
+      {message && (
+        <div
+          style={{
+            backgroundColor: "#d4edda",
+            padding: "0.5rem",
+            marginBottom: "1rem",
+            borderRadius: "4px",
+          }}
+        >
+          {message}
+        </div>
+      )}
+      {error && (
+        <div
+          style={{
+            backgroundColor: "#f8d7da",
+            padding: "0.5rem",
+            marginBottom: "1rem",
+            borderRadius: "4px",
+            color: "#721c24",
+          }}
+        >
+          {error}
+        </div>
+      )}
+
+      <div
+        style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem" }}
+      >
+        {/* Left column: User list and assignments */}
+        <div>
+          <h2>Users</h2>
+          <select
+            size="10"
+            style={{ width: "100%", padding: "0.5rem" }}
+            onChange={(e) => {
+              const u = users.find((user) => user.id == e.target.value);
+              handleSelectUser(u);
+            }}
+          >
+            <option value="">-- Select User --</option>
+            {users.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.email} ({u.role})
+              </option>
+            ))}
+          </select>
+
+          {selectedUser && (
+            <div style={{ marginTop: "2rem" }}>
+              <h3>Assign Dashboards to {selectedUser.email}</h3>
+              <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+                <div style={{ flex: 1 }}>
+                  <h4>All Dashboards</h4>
+                  {dashboards
+                    .filter(
+                      (d) => !assignedDashboards.some((ad) => ad.id === d.id),
+                    )
+                    .map((d) => (
+                      <div
+                        key={d.id}
+                        style={{
+                          marginBottom: "0.5rem",
+                          cursor: "pointer",
+                          background: "#f0f0f0",
+                          padding: "0.25rem 0.5rem",
+                          borderRadius: "4px",
+                        }}
+                        onClick={() => assignDashboard(d.id)}
+                      >
+                        {d.title} ({d.category})
+                      </div>
+                    ))}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <h4>Assigned Dashboards</h4>
+                  {assignedDashboards.map((d) => (
+                    <div
+                      key={d.id}
+                      style={{
+                        marginBottom: "0.5rem",
+                        cursor: "pointer",
+                        background: "#d4edda",
+                        padding: "0.25rem 0.5rem",
+                        borderRadius: "4px",
+                      }}
+                      onClick={() => removeAssignment(d.id)}
+                    >
+                      {d.title} ({d.category}) [Click to remove]
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right column: Add new dashboard */}
+        <div>
+          <h2>Add New Dashboard Link</h2>
+          <form onSubmit={addDashboard}>
             <input
-              type="email"
-              placeholder="Email *"
-              value={newUser.email}
+              type="text"
+              placeholder="Title"
+              value={newDashboard.title}
               onChange={(e) =>
-                setNewUser({ ...newUser, email: e.target.value })
+                setNewDashboard({ ...newDashboard, title: e.target.value })
               }
               required
-              className="admin-input"
+              style={{
+                width: "100%",
+                marginBottom: "0.5rem",
+                padding: "0.5rem",
+              }}
+            />
+            <textarea
+              placeholder="Description"
+              value={newDashboard.description}
+              onChange={(e) =>
+                setNewDashboard({
+                  ...newDashboard,
+                  description: e.target.value,
+                })
+              }
+              style={{
+                width: "100%",
+                marginBottom: "0.5rem",
+                padding: "0.5rem",
+              }}
+            />
+            <input
+              type="url"
+              placeholder="URL"
+              value={newDashboard.url}
+              onChange={(e) =>
+                setNewDashboard({ ...newDashboard, url: e.target.value })
+              }
+              required
+              style={{
+                width: "100%",
+                marginBottom: "0.5rem",
+                padding: "0.5rem",
+              }}
             />
             <input
               type="text"
-              placeholder="Full Name"
-              value={newUser.full_name}
+              placeholder="Category (e.g., SEO, Client Requests)"
+              value={newDashboard.category}
               onChange={(e) =>
-                setNewUser({ ...newUser, full_name: e.target.value })
-              }
-              className="admin-input"
-            />
-            <input
-              type="password"
-              placeholder="Password *"
-              value={newUser.password}
-              onChange={(e) =>
-                setNewUser({ ...newUser, password: e.target.value })
+                setNewDashboard({ ...newDashboard, category: e.target.value })
               }
               required
-              className="admin-input"
+              style={{
+                width: "100%",
+                marginBottom: "0.5rem",
+                padding: "0.5rem",
+              }}
             />
-            <select
-              value={newUser.role}
-              onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-              className="admin-input"
-            >
-              <option value="viewer">Viewer</option>
-              <option value="manager">Manager</option>
-              <option value="admin">Admin</option>
-            </select>
-            <select
-              value={newUser.department}
+            <input
+              type="text"
+              placeholder="Icon (emoji or text)"
+              value={newDashboard.icon}
               onChange={(e) =>
-                setNewUser({ ...newUser, department: e.target.value })
+                setNewDashboard({ ...newDashboard, icon: e.target.value })
               }
-              className="admin-input"
+              style={{
+                width: "100%",
+                marginBottom: "0.5rem",
+                padding: "0.5rem",
+              }}
+            />
+            <input
+              type="text"
+              placeholder="Background Color (e.g., #4CAF50)"
+              value={newDashboard.backgroundColor}
+              onChange={(e) =>
+                setNewDashboard({
+                  ...newDashboard,
+                  backgroundColor: e.target.value,
+                })
+              }
+              style={{
+                width: "100%",
+                marginBottom: "0.5rem",
+                padding: "0.5rem",
+              }}
+            />
+            <input
+              type="text"
+              placeholder="Tags (comma separated)"
+              onChange={(e) =>
+                setNewDashboard({
+                  ...newDashboard,
+                  tags: e.target.value.split(","),
+                })
+              }
+              style={{
+                width: "100%",
+                marginBottom: "0.5rem",
+                padding: "0.5rem",
+              }}
+            />
+            <button
+              type="submit"
+              style={{
+                padding: "0.5rem 1rem",
+                backgroundColor: "#4CAF50",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer",
+              }}
             >
-              <option value="">Select Department</option>
-              <option value="management">Management</option>
-              <option value="sales">Sales</option>
-              <option value="hr">HR</option>
-              <option value="it">IT</option>
-              <option value="marketing">Marketing</option>
-            </select>
-          </div>
-          <button type="submit" className="btn btn-primary">
-            Add User
-          </button>
-        </form>
-      </div>
+              Add Dashboard
+            </button>
+          </form>
 
-      {/* Users List */}
-      <h2>Existing Users</h2>
-      <div className="admin-table-wrapper">
-        <table className="admin-table">
-          <thead>
-            <tr>
-              <th>Email</th>
-              <th>Full Name</th>
-              <th>Role</th>
-              <th>Department</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((u) => (
-              <tr key={u.id}>
-                <td>{u.email}</td>
-                <td>{u.full_name || "-"}</td>
-                <td>{u.role}</td>
-                <td>{u.department || "-"}</td>
-                <td>{u.is_active ? "Active" : "Inactive"}</td>
-              </tr>
+          <h2 style={{ marginTop: "2rem" }}>Existing Dashboards</h2>
+          <div style={{ maxHeight: "300px", overflowY: "auto" }}>
+            {dashboards.map((d) => (
+              <div
+                key={d.id}
+                style={{ borderBottom: "1px solid #ccc", padding: "0.5rem 0" }}
+              >
+                <strong>{d.title}</strong> ({d.category})<br />
+                <small>{d.url}</small>
+                <br />
+                <button
+                  onClick={async () => {
+                    if (window.confirm("Delete this dashboard?")) {
+                      await axios.delete(
+                        `${API_URL}/admin/dashboards/${d.id}`,
+                        { headers: { "x-auth-token": token } },
+                      );
+                      fetchDashboards();
+                      setMessage("Dashboard deleted");
+                    }
+                  }}
+                  style={{
+                    marginTop: "0.25rem",
+                    backgroundColor: "#dc3545",
+                    color: "white",
+                    border: "none",
+                    padding: "0.25rem 0.5rem",
+                    borderRadius: "4px",
+                    cursor: "pointer",
+                  }}
+                >
+                  Delete
+                </button>
+              </div>
             ))}
-          </tbody>
-        </table>
+          </div>
+        </div>
       </div>
     </div>
   );

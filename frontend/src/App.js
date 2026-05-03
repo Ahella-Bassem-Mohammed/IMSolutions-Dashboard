@@ -32,21 +32,19 @@ function Dashboard() {
               Admin Panel
             </button>
           )}
-          <span className="header-user">Welcome, {user.email}</span>
-          <button
-            type="button"
-            onClick={logout}
-            className="btn btn-muted"
-          >
+          <span style={{ marginRight: "1rem" }}>
+            Welcome, {user.full_name || user.email}
+          </span>
+          <button type="button" onClick={logout} className="btn btn-muted">
             Logout
           </button>
         </div>
       </header>
-      <main className="app-main">
+      <main className="dashboard-container">
         {Object.keys(groupedLinks).map((category) => (
           <section key={category} className="category-section">
             <h2 className="category-title">{category}</h2>
-            <div className="links-grid">
+            <div className="dashboard-grid">
               {groupedLinks[category].map((link) => (
                 <div
                   key={link.id}
@@ -66,9 +64,7 @@ function Dashboard() {
                 >
                   <div className="link-icon">{link.icon}</div>
                   <h3 className="link-title">{link.title}</h3>
-                  <p className="link-description">
-                    {link.description}
-                  </p>
+                  <p className="link-description">{link.description}</p>
                 </div>
               ))}
             </div>

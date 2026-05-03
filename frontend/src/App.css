@@ -261,3 +261,39 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+@media (max-width: 768px) {
+  header {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+  main {
+    padding: 10px !important;
+  }
+  .dashboard-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .admin-panel {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+.dashboard-container {
+  padding: 20px;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+@media (max-width: 768px) {
+  .dashboard-container {
+    padding: 10px;
+  }
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
