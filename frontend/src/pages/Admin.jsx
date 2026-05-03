@@ -22,12 +22,15 @@ const Admin = () => {
 
   // Fetch all users
   const fetchUsers = async () => {
+    setError("");
     try {
       const response = await axios.get(`${API_URL}/admin/users`, {
         headers: { "x-auth-token": token },
       });
       setUsers(response.data);
     } catch (err) {
+      setUsers([]);
+      setError(err.response?.data?.message || "Failed to fetch users");
       console.error("Failed to fetch users", err);
     }
   };
