@@ -20,112 +20,59 @@ function Dashboard() {
 
   return (
     <>
-      <header
-        style={{
-          backgroundColor: "#2c3e50",
-          color: "white",
-          padding: "1rem",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <h1 style={{ margin: 0 }}>IMSolutions Dashboard</h1>
-        <div>
+      <header className="app-header">
+        <h1 className="brand-title">IMSolutions Dashboard</h1>
+        <div className="header-actions">
           {user.role === "admin" && (
             <button
               type="button"
               onClick={() => navigate("/admin")}
-              style={{
-                marginRight: "1rem",
-                padding: "0.5rem 1rem",
-                backgroundColor: "#3498db",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-              }}
+              className="btn btn-primary"
             >
               Admin Panel
             </button>
           )}
-          <span style={{ marginRight: "1rem" }}>Welcome, {user.email}</span>
+          <span className="header-user">Welcome, {user.email}</span>
           <button
             type="button"
             onClick={logout}
-            style={{
-              padding: "0.5rem 1rem",
-              backgroundColor: "#e74c3c",
-              color: "white",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-            }}
+            className="btn btn-muted"
           >
             Logout
           </button>
         </div>
       </header>
-      <main style={{ padding: "20px" }}>
+      <main className="app-main">
         {Object.keys(groupedLinks).map((category) => (
-          <div key={category} style={{ marginBottom: "2rem" }}>
-            <h2
-              style={{
-                borderBottom: "3px solid #4CAF50",
-                paddingBottom: "0.5rem",
-                marginBottom: "1rem",
-              }}
-            >
-              {category}
-            </h2>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-                gap: "1rem",
-              }}
-            >
+          <section key={category} className="category-section">
+            <h2 className="category-title">{category}</h2>
+            <div className="links-grid">
               {groupedLinks[category].map((link) => (
                 <div
                   key={link.id}
                   role="link"
                   tabIndex={0}
+                  aria-label={link.title}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
                       window.open(link.url, "_blank", "noopener,noreferrer");
                     }
                   }}
-                  style={{
-                    border: "1px solid #ddd",
-                    borderRadius: "8px",
-                    padding: "1rem",
-                    backgroundColor: link.backgroundColor || "#fff",
-                    color: link.backgroundColor ? "#fff" : "#333",
-                    transition: "transform 0.2s",
-                    cursor: "pointer",
-                  }}
+                  className="link-card"
                   onClick={() =>
                     window.open(link.url, "_blank", "noopener,noreferrer")
                   }
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.transform = "translateY(-5px)")
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.transform = "translateY(0)")
-                  }
                 >
-                  <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>
-                    {link.icon}
-                  </div>
-                  <h3 style={{ margin: "0 0 0.5rem 0" }}>{link.title}</h3>
-                  <p style={{ margin: 0, fontSize: "0.9rem", opacity: 0.9 }}>
+                  <div className="link-icon">{link.icon}</div>
+                  <h3 className="link-title">{link.title}</h3>
+                  <p className="link-description">
                     {link.description}
                   </p>
                 </div>
               ))}
             </div>
-          </div>
+          </section>
         ))}
       </main>
     </>
@@ -137,14 +84,7 @@ function App() {
 
   if (loading) {
     return (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-        }}
-      >
+      <div className="loading-screen">
         Loading...
       </div>
     );

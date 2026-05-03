@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
 
@@ -6,6 +7,7 @@ const API_URL = "http://localhost:5000/api";
 
 const Admin = () => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [newUser, setNewUser] = useState({
     email: "",
@@ -61,10 +63,10 @@ const Admin = () => {
   // Redirect non-admin users
   if (user?.role !== "admin") {
     return (
-      <div style={{ padding: "2rem", textAlign: "center" }}>
+      <div className="access-denied">
         <h2>Access Denied</h2>
         <p>You don't have permission to view this page.</p>
-        <button onClick={() => (window.location.href = "/")}>
+        <button type="button" className="btn btn-primary" onClick={() => navigate("/")}>
           Go to Dashboard
         </button>
       </div>
@@ -72,37 +74,21 @@ const Admin = () => {
   }
 
   return (
-    <div style={{ padding: "2rem", maxWidth: "1200px", margin: "0 auto" }}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "2rem",
-        }}
-      >
+    <div className="admin-page">
+      <div className="admin-header">
         <h1>Admin Panel</h1>
         <div>
           <button
-            onClick={() => (window.location.href = "/")}
-            style={{
-              marginRight: "1rem",
-              padding: "0.5rem 1rem",
-              cursor: "pointer",
-            }}
+            type="button"
+            onClick={() => navigate("/")}
+            className="btn btn-primary"
           >
             Back to Dashboard
           </button>
           <button
+            type="button"
             onClick={logout}
-            style={{
-              padding: "0.5rem 1rem",
-              backgroundColor: "#e74c3c",
-              color: "white",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-            }}
+            className="btn btn-muted"
           >
             Logout
           </button>
@@ -110,29 +96,12 @@ const Admin = () => {
       </div>
 
       {/* Add User Form */}
-      <div
-        style={{
-          backgroundColor: "#f5f5f5",
-          padding: "1.5rem",
-          borderRadius: "8px",
-          marginBottom: "2rem",
-        }}
-      >
+      <div className="admin-card">
         <h2>Add New User</h2>
-        {message && (
-          <div style={{ color: "green", marginBottom: "1rem" }}>{message}</div>
-        )}
-        {error && (
-          <div style={{ color: "red", marginBottom: "1rem" }}>{error}</div>
-        )}
+        {message && <div className="form-success">{message}</div>}
+        {error && <div className="form-error">{error}</div>}
         <form onSubmit={addUser}>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(2, 1fr)",
-              gap: "1rem",
-            }}
-          >
+          <div className="admin-form-grid">
             <input
               type="email"
               placeholder="Email *"
@@ -141,7 +110,7 @@ const Admin = () => {
                 setNewUser({ ...newUser, email: e.target.value })
               }
               required
-              style={{ padding: "0.5rem" }}
+              className="admin-input"
             />
             <input
               type="text"
@@ -150,7 +119,7 @@ const Admin = () => {
               onChange={(e) =>
                 setNewUser({ ...newUser, full_name: e.target.value })
               }
-              style={{ padding: "0.5rem" }}
+              className="admin-input"
             />
             <input
               type="password"
@@ -160,12 +129,12 @@ const Admin = () => {
                 setNewUser({ ...newUser, password: e.target.value })
               }
               required
-              style={{ padding: "0.5rem" }}
+              className="admin-input"
             />
             <select
               value={newUser.role}
               onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-              style={{ padding: "0.5rem" }}
+              className="admin-input"
             >
               <option value="viewer">Viewer</option>
               <option value="manager">Manager</option>
@@ -176,7 +145,7 @@ const Admin = () => {
               onChange={(e) =>
                 setNewUser({ ...newUser, department: e.target.value })
               }
-              style={{ padding: "0.5rem" }}
+              className="admin-input"
             >
               <option value="">Select Department</option>
               <option value="management">Management</option>
@@ -186,18 +155,7 @@ const Admin = () => {
               <option value="marketing">Marketing</option>
             </select>
           </div>
-          <button
-            type="submit"
-            style={{
-              marginTop: "1rem",
-              padding: "0.5rem 1rem",
-              backgroundColor: "#4CAF50",
-              color: "white",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-            }}
-          >
+          <button type="submit" className="btn btn-primary">
             Add User
           </button>
         </form>
@@ -205,85 +163,25 @@ const Admin = () => {
 
       {/* Users List */}
       <h2>Existing Users</h2>
-      <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+      <div className="admin-table-wrapper">
+        <table className="admin-table">
           <thead>
             <tr>
-              <th
-                style={{
-                  textAlign: "left",
-                  padding: "0.5rem",
-                  borderBottom: "2px solid #ddd",
-                }}
-              >
-                Email
-              </th>
-              <th
-                style={{
-                  textAlign: "left",
-                  padding: "0.5rem",
-                  borderBottom: "2px solid #ddd",
-                }}
-              >
-                Full Name
-              </th>
-              <th
-                style={{
-                  textAlign: "left",
-                  padding: "0.5rem",
-                  borderBottom: "2px solid #ddd",
-                }}
-              >
-                Role
-              </th>
-              <th
-                style={{
-                  textAlign: "left",
-                  padding: "0.5rem",
-                  borderBottom: "2px solid #ddd",
-                }}
-              >
-                Department
-              </th>
-              <th
-                style={{
-                  textAlign: "left",
-                  padding: "0.5rem",
-                  borderBottom: "2px solid #ddd",
-                }}
-              >
-                Status
-              </th>
+              <th>Email</th>
+              <th>Full Name</th>
+              <th>Role</th>
+              <th>Department</th>
+              <th>Status</th>
             </tr>
           </thead>
           <tbody>
             {users.map((u) => (
               <tr key={u.id}>
-                <td
-                  style={{ padding: "0.5rem", borderBottom: "1px solid #ddd" }}
-                >
-                  {u.email}
-                </td>
-                <td
-                  style={{ padding: "0.5rem", borderBottom: "1px solid #ddd" }}
-                >
-                  {u.full_name || "-"}
-                </td>
-                <td
-                  style={{ padding: "0.5rem", borderBottom: "1px solid #ddd" }}
-                >
-                  {u.role}
-                </td>
-                <td
-                  style={{ padding: "0.5rem", borderBottom: "1px solid #ddd" }}
-                >
-                  {u.department || "-"}
-                </td>
-                <td
-                  style={{ padding: "0.5rem", borderBottom: "1px solid #ddd" }}
-                >
-                  {u.is_active ? "Active" : "Inactive"}
-                </td>
+                <td>{u.email}</td>
+                <td>{u.full_name || "-"}</td>
+                <td>{u.role}</td>
+                <td>{u.department || "-"}</td>
+                <td>{u.is_active ? "Active" : "Inactive"}</td>
               </tr>
             ))}
           </tbody>
