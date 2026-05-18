@@ -4,6 +4,10 @@ import { useAuth } from "./context/AuthContext";
 import Login from "./pages/Login";
 import Admin from "./pages/Admin";
 import "./App.css";
+import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
+
 
 function Dashboard() {
   const { user, links, logout } = useAuth();
@@ -94,6 +98,9 @@ function App() {
     <Routes>
       <Route path="/" element={<Dashboard />} />
       <Route path="/admin" element={<Admin />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
     </Routes>
   );
 }

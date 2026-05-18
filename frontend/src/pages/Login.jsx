@@ -45,6 +45,8 @@ const Login = () => {
             Login
           </button>
         </form>
+        <Link to="/register">Create Account</Link> |{" "}
+        <Link to="/forgot-password">Forgot Password?</Link>
         <div className="login-hint">
           Demo: admin@im-solutions.com / Admin123!
         </div>

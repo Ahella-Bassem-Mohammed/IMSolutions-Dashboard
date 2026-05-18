@@ -43,8 +43,9 @@ module.exports = (app) => {
       const password_hash = await bcrypt.hash(password, salt);
       const result = await runQuery(
         db,
-        "INSERT INTO users (email, password_hash, full_name, role, department, is_active) VALUES (?, ?, ?, ?, ?, ?)",
-        [email, password_hash, full_name, role || "viewer", department, 1],
+        `INSERT INTO users (email, password_hash, full_name, role, department, is_active, is_verified)
+   VALUES (?, ?, ?, ?, ?, 1, 1)`,
+        [email, password_hash, full_name, role || "viewer", department],
       );
       res.json({ message: "User created successfully", userId: result.lastID });
     } catch (err) {
@@ -107,12 +108,13 @@ module.exports = (app) => {
   });
 
   // ---------- User-dashboard assignments ----------
+  // ------------------- User-dashboard assignments -------------------
   router.get("/user-dashboards/:userId", auth, isAdmin, async (req, res) => {
     const dashboards = await allQuery(
       db,
       `SELECT d.* FROM dashboards d
-       JOIN user_dashboard_access u ON u.dashboard_id = d.id
-       WHERE u.user_id = ?`,
+         JOIN user_dashboard_access u ON u.dashboard_id = d.id
+         WHERE u.user_id = ?`,
       [req.params.userId],
     );
     res.json(dashboards);
