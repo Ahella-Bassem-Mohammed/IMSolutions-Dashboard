@@ -1,7 +1,8 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
 import axios from "axios";
 
-const API_URL = "http://localhost:5000/api";
+export const API_URL =
+  process.env.REACT_APP_API_URL || "http://localhost:5000/api";
 
 const AuthContext = createContext();
 
@@ -28,7 +29,9 @@ export const AuthProvider = ({ children }) => {
       });
       if (response.data.valid) {
         setUser(response.data.user);
-        await fetchLinks(token);
+        if (!response.data.user.must_change_password) {
+          await fetchLinks(token);
+        }
       } else {
         localStorage.removeItem("token");
       }
@@ -58,8 +61,30 @@ export const AuthProvider = ({ children }) => {
     const { token, user } = response.data;
     localStorage.setItem("token", token);
     setUser(user);
-    await fetchLinks(token);
+    if (!user.must_change_password) {
+      await fetchLinks(token);
+    }
     return user;
+  };
+
+  // Called after a forced password change succeeds.
+  // Updates the token + user, then loads the user's links.
+  const completePasswordChange = async (newToken, newUser) => {
+    localStorage.setItem("token", newToken);
+    setUser(newUser);
+    await fetchLinks(newToken);
+  };
+
+  const changePassword = async (currentPassword, newPassword) => {
+    const token = localStorage.getItem("token");
+    const response = await axios.post(
+      `${API_URL}/auth/change-password`,
+      { currentPassword, newPassword },
+      { headers: { "x-auth-token": token } },
+    );
+    const { token: newToken, user: newUser } = response.data;
+    await completePasswordChange(newToken, newUser);
+    return response.data;
   };
 
   const logout = () => {
@@ -69,7 +94,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading, links }}>
+    <AuthContext.Provider
+      value={{ user, login, logout, loading, links, changePassword }}
+    >
       {children}
     </AuthContext.Provider>
   );

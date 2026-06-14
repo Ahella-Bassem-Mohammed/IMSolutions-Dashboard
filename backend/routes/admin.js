@@ -7,20 +7,21 @@ module.exports = (app) => {
   const { runQuery, getQuery, allQuery } = app.locals;
   const db = app.locals.db;
 
-  // Middleware to check if user is admin
-  const isAdmin = async (req, res, next) => {
+  const isAdmin = (req, res, next) => {
     if (req.user.role !== "admin") {
       return res.status(403).json({ message: "Admin access required" });
     }
     next();
   };
 
-  // ---------- User management ----------
+  // ── USERS ──────────────────────────────────────────────────────────────────
+
   router.get("/users", auth, isAdmin, async (req, res) => {
     try {
       const users = await allQuery(
         db,
-        "SELECT id, email, full_name, role, department, is_active, created_at FROM users ORDER BY created_at DESC",
+        `SELECT id, email, full_name, role, department, is_active, must_change_password, created_at
+         FROM users ORDER BY created_at DESC`,
       );
       res.json(users);
     } catch (err) {
@@ -29,8 +30,14 @@ module.exports = (app) => {
     }
   });
 
+  // Create user — always sets must_change_password = 1
   router.post("/users", auth, isAdmin, async (req, res) => {
     const { email, password, full_name, role, department } = req.body;
+    if (!email || !password || !full_name) {
+      return res
+        .status(400)
+        .json({ message: "email, password and full_name are required" });
+    }
     try {
       const existing = await getQuery(
         db,
@@ -39,14 +46,22 @@ module.exports = (app) => {
       );
       if (existing)
         return res.status(400).json({ message: "User already exists" });
+
       const salt = await bcrypt.genSalt(10);
       const password_hash = await bcrypt.hash(password, salt);
       const result = await runQuery(
         db,
-        `INSERT INTO users (email, password_hash, full_name, role, department, is_active, is_verified)
-   VALUES (?, ?, ?, ?, ?, 1, 1)`,
-        [email, password_hash, full_name, role || "viewer", department],
+        `INSERT INTO users (email, password_hash, full_name, role, department, is_active, must_change_password)
+         VALUES (?, ?, ?, ?, ?, 1, 1)`,
+        [email, password_hash, full_name, role || "viewer", department || null],
       );
+
+      await runQuery(
+        db,
+        "INSERT INTO audit_log (user_id, action, detail, ip_address) VALUES (?, ?, ?, ?)",
+        [req.user.id, "admin_created_user", email, req.ip],
+      );
+
       res.json({ message: "User created successfully", userId: result.lastID });
     } catch (err) {
       console.error(err);
@@ -54,11 +69,67 @@ module.exports = (app) => {
     }
   });
 
-  // ---------- Dashboard management ----------
+  // Edit user (name, role, department, active status)
+  router.put("/users/:id", auth, isAdmin, async (req, res) => {
+    const { full_name, role, department, is_active } = req.body;
+    try {
+      await runQuery(
+        db,
+        `UPDATE users SET full_name=?, role=?, department=?, is_active=?, updated_at=CURRENT_TIMESTAMP
+         WHERE id=?`,
+        [full_name, role, department || null, is_active ? 1 : 0, req.params.id],
+      );
+      res.json({ message: "User updated" });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Admin resets a user's password (forces must_change_password back to 1)
+  router.post("/users/:id/reset-password", auth, isAdmin, async (req, res) => {
+    const { newPassword } = req.body;
+    if (!newPassword || newPassword.length < 6) {
+      return res
+        .status(400)
+        .json({ message: "Password must be at least 6 characters" });
+    }
+    try {
+      const salt = await bcrypt.genSalt(10);
+      const password_hash = await bcrypt.hash(newPassword, salt);
+      await runQuery(
+        db,
+        "UPDATE users SET password_hash=?, must_change_password=1, updated_at=CURRENT_TIMESTAMP WHERE id=?",
+        [password_hash, req.params.id],
+      );
+
+      await runQuery(
+        db,
+        "INSERT INTO audit_log (user_id, action, detail, ip_address) VALUES (?, ?, ?, ?)",
+        [
+          req.user.id,
+          "admin_reset_password",
+          `userId:${req.params.id}`,
+          req.ip,
+        ],
+      );
+
+      res.json({
+        message:
+          "Password reset. User will be prompted to change it on next login.",
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // ── DASHBOARDS ─────────────────────────────────────────────────────────────
+
   router.get("/dashboards", auth, isAdmin, async (req, res) => {
     const dashboards = await allQuery(
       db,
-      "SELECT * FROM dashboards ORDER BY category, id",
+      "SELECT * FROM dashboards ORDER BY category, title",
     );
     res.json(dashboards);
   });
@@ -66,6 +137,11 @@ module.exports = (app) => {
   router.post("/dashboards", auth, isAdmin, async (req, res) => {
     const { title, description, url, category, icon, backgroundColor, tags } =
       req.body;
+    if (!title || !url || !category) {
+      return res
+        .status(400)
+        .json({ message: "title, url and category are required" });
+    }
     const result = await runQuery(
       db,
       "INSERT INTO dashboards (title, description, url, category, icon, backgroundColor, tags) VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -74,8 +150,8 @@ module.exports = (app) => {
         description,
         url,
         category,
-        icon,
-        backgroundColor,
+        icon || "🔗",
+        backgroundColor || "#4CAF50",
         JSON.stringify(tags || []),
       ],
     );
@@ -107,19 +183,22 @@ module.exports = (app) => {
     res.json({ message: "Dashboard deleted" });
   });
 
-  // ---------- User-dashboard assignments ----------
-  // ------------------- User-dashboard assignments -------------------
+  // ── USER–DASHBOARD ASSIGNMENTS ─────────────────────────────────────────────
+
+  // Get dashboards assigned to a specific user
   router.get("/user-dashboards/:userId", auth, isAdmin, async (req, res) => {
     const dashboards = await allQuery(
       db,
       `SELECT d.* FROM dashboards d
-         JOIN user_dashboard_access u ON u.dashboard_id = d.id
-         WHERE u.user_id = ?`,
+       JOIN user_dashboard_access u ON u.dashboard_id = d.id
+       WHERE u.user_id = ?
+       ORDER BY d.category, d.title`,
       [req.params.userId],
     );
     res.json(dashboards);
   });
 
+  // Assign a single dashboard to a user
   router.post("/assign-dashboard", auth, isAdmin, async (req, res) => {
     const { userId, dashboardId } = req.body;
     await runQuery(
@@ -130,6 +209,7 @@ module.exports = (app) => {
     res.json({ message: "Assigned" });
   });
 
+  // Remove a single assignment
   router.delete("/assign-dashboard", auth, isAdmin, async (req, res) => {
     const { userId, dashboardId } = req.body;
     await runQuery(
@@ -138,6 +218,50 @@ module.exports = (app) => {
       [userId, dashboardId],
     );
     res.json({ message: "Removed" });
+  });
+
+  // Bulk replace all assignments for a user at once
+  router.post("/assign-dashboards-bulk", auth, isAdmin, async (req, res) => {
+    const { userId, dashboardIds } = req.body;
+    if (!userId) return res.status(400).json({ message: "userId required" });
+    try {
+      await runQuery(db, "DELETE FROM user_dashboard_access WHERE user_id=?", [
+        userId,
+      ]);
+      for (const dashboardId of dashboardIds || []) {
+        await runQuery(
+          db,
+          "INSERT OR IGNORE INTO user_dashboard_access (user_id, dashboard_id) VALUES (?, ?)",
+          [userId, dashboardId],
+        );
+      }
+      res.json({
+        message: `Assigned ${(dashboardIds || []).length} dashboards to user ${userId}`,
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // ── AUDIT LOG ──────────────────────────────────────────────────────────────
+
+  router.get("/audit-log", auth, isAdmin, async (req, res) => {
+    try {
+      const logs = await allQuery(
+        db,
+        `SELECT a.id, a.action, a.detail, a.ip_address, a.created_at,
+                u.email, u.full_name
+         FROM audit_log a
+         LEFT JOIN users u ON u.id = a.user_id
+         ORDER BY a.created_at DESC
+         LIMIT 200`,
+      );
+      res.json(logs);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Server error" });
+    }
   });
 
   return router;

@@ -4,29 +4,43 @@ const fs = require("fs");
 
 const dbPath = path.join(__dirname, "imsolutions.db");
 
-// Initialize database
 function initDatabase() {
   const db = new sqlite3.Database(dbPath);
 
-  // Read and execute init.sqlite.sql
   const initSql = fs.readFileSync(
     path.join(__dirname, "init.sqlite.sql"),
     "utf8",
   );
-  const statements = initSql.split(";");
+  const statements = initSql
+    .split(";")
+    .map((s) => s.trim())
+    .filter(Boolean);
 
   db.serialize(() => {
-    statements.forEach((statement) => {
-      if (statement.trim()) {
-        db.run(statement);
-      }
+    db.run("PRAGMA foreign_keys = ON");
+
+    statements.forEach((stmt) => {
+      db.run(stmt, (err) => {
+        if (err && !err.message.includes("already exists")) {
+          console.warn("DB init warning:", err.message);
+        }
+      });
     });
+
+    // Migrate: add must_change_password if it doesn't exist yet
+    db.run(
+      "ALTER TABLE users ADD COLUMN must_change_password INTEGER DEFAULT 1",
+      (err) => {
+        if (err && !err.message.includes("duplicate column")) {
+          // Column already exists — fine, ignore
+        }
+      },
+    );
   });
 
   return db;
 }
 
-// Promise wrapper for sqlite3
 function runQuery(db, sql, params = []) {
   return new Promise((resolve, reject) => {
     db.run(sql, params, function (err) {

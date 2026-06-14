@@ -10,26 +10,27 @@ module.exports = (app) => {
     try {
       const user = req.user;
 
-      // 1. Admin and Top Management see everything
+      // Admin and top_management see everything
       if (user.role === "admin" || user.role === "top_management") {
         const allDashboards = await allQuery(
           db,
-          "SELECT * FROM dashboards ORDER BY category, id",
+          "SELECT * FROM dashboards ORDER BY category, title",
         );
         return res.json({ links: allDashboards, userRole: user.role });
       }
 
-      // 2. For all other users: return ONLY dashboards assigned to them
-      const assignedDashboards = await allQuery(
+      // Everyone else sees ONLY what the admin has explicitly assigned them.
+      // No assignment = empty dashboard.
+      const userDashboards = await allQuery(
         db,
         `SELECT d.* FROM dashboards d
-                 JOIN user_dashboard_access u ON u.dashboard_id = d.id
-                 WHERE u.user_id = ?`,
+         JOIN user_dashboard_access u ON u.dashboard_id = d.id
+         WHERE u.user_id = ?
+         ORDER BY d.category, d.title`,
         [user.id],
       );
 
-      // If no assignments, return empty array (user sees nothing)
-      res.json({ links: assignedDashboards, userRole: user.role });
+      res.json({ links: userDashboards, userRole: user.role });
     } catch (err) {
       console.error("Error in /api/links:", err);
       res.status(500).json({ message: "Server error", error: err.message });

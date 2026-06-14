@@ -6,16 +6,21 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
+    setSubmitting(true);
     try {
       await login(email, password);
       navigate("/");
     } catch (err) {
       setError(err.response?.data?.message || "Login failed");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -31,6 +36,7 @@ const Login = () => {
             onChange={(e) => setEmail(e.target.value)}
             required
             className="login-input"
+            autoComplete="username"
           />
           <input
             type="password"
@@ -39,17 +45,17 @@ const Login = () => {
             onChange={(e) => setPassword(e.target.value)}
             required
             className="login-input"
+            autoComplete="current-password"
           />
           {error && <div className="form-error">{error}</div>}
-          <button type="submit" className="btn btn-primary login-button">
-            Login
+          <button
+            type="submit"
+            className="btn btn-primary login-button"
+            disabled={submitting}
+          >
+            {submitting ? "Signing in..." : "Login"}
           </button>
         </form>
-        <Link to="/register">Create Account</Link> |{" "}
-        <Link to="/forgot-password">Forgot Password?</Link>
-        <div className="login-hint">
-          Demo: admin@im-solutions.com / Admin123!
-        </div>
       </div>
     </div>
   );

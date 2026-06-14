@@ -3,11 +3,8 @@ import { Routes, Route, useNavigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import Login from "./pages/Login";
 import Admin from "./pages/Admin";
+import ChangePassword from "./pages/ChangePassword";
 import "./App.css";
-import Register from './pages/Register';
-import ForgotPassword from './pages/ForgotPassword';
-import ResetPassword from './pages/ResetPassword';
-
 
 function Dashboard() {
   const { user, links, logout } = useAuth();
@@ -21,6 +18,8 @@ function Dashboard() {
     groups[category].push(link);
     return groups;
   }, {});
+
+  const hasLinks = Object.keys(groupedLinks).length > 0;
 
   return (
     <>
@@ -45,6 +44,15 @@ function Dashboard() {
         </div>
       </header>
       <main className="dashboard-container">
+        {!hasLinks && (
+          <div className="access-denied">
+            <h2>No Dashboards Assigned Yet</h2>
+            <p>
+              You don't have any dashboards assigned to your account yet. Please
+              contact an administrator to get access.
+            </p>
+          </div>
+        )}
         {Object.keys(groupedLinks).map((category) => (
           <section key={category} className="category-section">
             <h2 className="category-title">{category}</h2>
@@ -83,24 +91,22 @@ function App() {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="loading-screen">
-        Loading...
-      </div>
-    );
+    return <div className="loading-screen">Loading...</div>;
   }
 
   if (!user) {
     return <Login />;
   }
 
+  // Force password change before anything else
+  if (user.must_change_password) {
+    return <ChangePassword />;
+  }
+
   return (
     <Routes>
       <Route path="/" element={<Dashboard />} />
       <Route path="/admin" element={<Admin />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/forgot-password" element={<ForgotPassword />} />
-      <Route path="/reset-password" element={<ResetPassword />} />
     </Routes>
   );
 }
