@@ -1,0 +1,140 @@
+.app-header {
+  background: var(--ims-white);
+  border-bottom: 4px solid var(--ims-orange);
+  padding: 0.6rem 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 3px 12px rgba(45, 49, 57, 0.08);
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 1.75rem;
+}
+
+.nav-logo {
+  height: 42px;
+  width: auto;
+  display: block;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.nav-link {
+  border: 0;
+  background: none;
+  cursor: pointer;
+  padding: 0.5rem 0.85rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--ims-gray-700);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.nav-link:hover {
+  background: var(--ims-gray-200);
+  color: var(--ims-gray-900);
+}
+
+.nav-link.active {
+  background: var(--ims-orange);
+  color: var(--ims-white);
+}
+
+.nav-user {
+  position: relative;
+}
+
+.nav-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid var(--ims-orange);
+  background: var(--ims-gray-900);
+  color: var(--ims-white);
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease;
+}
+
+.nav-avatar:hover {
+  transform: translateY(-1px);
+}
+
+.nav-dropdown {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  min-width: 220px;
+  background: var(--ims-white);
+  border: 1px solid var(--ims-gray-200);
+  border-radius: 10px;
+  box-shadow: 0 10px 24px rgba(45, 49, 57, 0.14);
+  overflow: hidden;
+  z-index: 40;
+}
+
+.nav-dropdown-header {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--ims-gray-200);
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.nav-dropdown-header strong {
+  color: var(--ims-gray-900);
+  font-size: 0.92rem;
+}
+
+.nav-dropdown-header small {
+  color: var(--ims-gray-700);
+  font-size: 0.8rem;
+}
+
+.nav-dropdown-item {
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: none;
+  padding: 0.7rem 1rem;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--ims-gray-900);
+  transition: background-color 0.15s ease;
+}
+
+.nav-dropdown-item:hover {
+  background: var(--ims-gray-200);
+}
+
+@media (max-width: 768px) {
+  .nav-left {
+    gap: 1rem;
+  }
+
+  .nav-links {
+    gap: 0.15rem;
+  }
+
+  .nav-link {
+    padding: 0.45rem 0.6rem;
+    font-size: 0.85rem;
+  }
+}

@@ -12,32 +12,15 @@ body {
   color: var(--ims-gray-900);
 }
 
-.app-header {
-  background: var(--ims-white);
-  border-bottom: 4px solid var(--ims-orange);
-  padding: 1rem 1.25rem;
+.app-shell {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  box-shadow: 0 3px 12px rgba(45, 49, 57, 0.08);
+  flex-direction: column;
+  min-height: 100vh;
 }
 
-.brand-title {
-  margin: 0;
-  color: var(--ims-gray-900);
-  font-size: clamp(1.2rem, 2.2vw, 1.6rem);
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.header-user {
-  color: var(--ims-gray-700);
-  font-weight: 600;
+.app-shell main,
+.app-shell .admin-page {
+  flex: 1;
 }
 
 .btn {
@@ -159,6 +142,12 @@ body {
   margin-bottom: 0.85rem;
   border: 1px solid var(--ims-gray-200);
   border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.form-group .admin-input,
+.form-row .admin-input {
+  margin-bottom: 0;
 }
 
 .login-input:focus,
@@ -218,6 +207,81 @@ body {
   gap: 0.85rem;
 }
 
+.form-group {
+  margin-bottom: 0.9rem;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ims-gray-700);
+  margin-bottom: 0.3rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+}
+
+.form-row .form-group {
+  margin-bottom: 0;
+}
+
+.color-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.color-input-wrapper input[type="color"] {
+  width: 44px;
+  height: 38px;
+  padding: 2px;
+  border: 1px solid var(--ims-gray-200);
+  border-radius: 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.color-input-wrapper input[type="text"] {
+  margin-bottom: 0;
+}
+
+.dashboard-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid var(--ims-gray-200);
+  border-radius: 8px;
+  margin-bottom: 0.9rem;
+  background: #fafbfc;
+}
+
+.dashboard-preview-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.dashboard-preview-text {
+  font-size: 0.85rem;
+  color: var(--ims-gray-700);
+}
+
+.dashboard-preview-text strong {
+  color: var(--ims-gray-900);
+  display: block;
+  font-size: 0.92rem;
+}
+
 .admin-table-wrapper {
   overflow-x: auto;
   border: 1px solid var(--ims-gray-200);
@@ -257,8 +321,13 @@ body {
     align-items: flex-start;
   }
 
-  .admin-form-grid {
+  .admin-form-grid,
+  .form-row {
     grid-template-columns: 1fr;
+  }
+
+  .dashboards-tab-grid {
+    grid-template-columns: 1fr !important;
   }
 }
 
