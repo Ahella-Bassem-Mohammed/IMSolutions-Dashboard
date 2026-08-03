@@ -32,6 +32,8 @@ app.use(
   }),
 );
 
+app.options('*', cors());  // or the same cors config
+
 app.use(express.json());
 
 const authRoutes = require("./routes/auth")(app);
@@ -46,9 +48,32 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "OK", timestamp: new Date().toISOString() });
 });
 
+const path = require("path");
+const fs = require("fs");
+
+// Serve React build when present (production / combined deploy)
+const buildCandidates = [
+  path.join(__dirname, "../frontend/build"),
+  path.join(__dirname, "../build"),
+];
+const buildPath = buildCandidates.find((p) => fs.existsSync(p));
+if (buildPath) {
+  app.use(express.static(buildPath));
+  app.get("*", (req, res, next) => {
+    if (req.path.startsWith("/api")) return next();
+    res.sendFile(path.join(buildPath, "index.html"));
+  });
+}
+
 async function setupAdmin() {
+  const isProduction = process.env.NODE_ENV === "production";
   const adminEmail = process.env.ADMIN_EMAIL || "admin@im-solutions.com";
   const adminPassword = process.env.ADMIN_PASSWORD || "Admin123!";
+
+  if (isProduction && (!process.env.ADMIN_EMAIL || !process.env.ADMIN_PASSWORD)) {
+    console.log("⚠️  Skipping admin bootstrap in production until ADMIN_EMAIL and ADMIN_PASSWORD are configured");
+    return;
+  }
 
   try {
     const existingAdmin = await getQuery(
@@ -63,8 +88,8 @@ async function setupAdmin() {
       await runQuery(
         db,
         `INSERT INTO users
-           (email, password_hash, full_name, role, department, is_active, must_change_password)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+           (email, password_hash, full_name, role, department, is_active, must_change_password, is_verified)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           adminEmail,
           password_hash,
@@ -73,12 +98,19 @@ async function setupAdmin() {
           "management",
           1,
           0,
+          1,
         ],
       );
       console.log("✅ Default admin user created");
       console.log(`   Email: ${adminEmail}`);
       console.log("   ⚠️  CHANGE THIS PASSWORD AFTER FIRST LOGIN!");
     } else {
+      // Ensure existing admin can log in after email-verification was added
+      await runQuery(
+        db,
+        "UPDATE users SET is_verified = 1 WHERE email = ? AND (is_verified IS NULL OR is_verified = 0)",
+        [adminEmail],
+      );
       console.log("✅ Admin user already exists");
     }
   } catch (err) {
@@ -92,6 +124,7 @@ async function startServer() {
     console.log(`\n🚀 Server running on port ${PORT}`);
     console.log(`📍 API URL: http://localhost:${PORT}`);
     console.log(`🔐 Auth: http://localhost:${PORT}/api/auth/login`);
+    console.log(`🗄️  DB Path: ${process.env.DB_PATH || "backend/database/imsolutions.local.db"}`);
     console.log(`\n💡 Test: curl http://localhost:${PORT}/api/health\n`);
   });
 }

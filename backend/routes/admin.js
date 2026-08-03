@@ -2,6 +2,8 @@ const express = require("express");
 const router = express.Router();
 const auth = require("../middleware/auth");
 const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
+const { sendVerificationEmail } = require("../utils/emailService");
 
 module.exports = (app) => {
   const { runQuery, getQuery, allQuery } = app.locals;
@@ -20,7 +22,7 @@ module.exports = (app) => {
     try {
       const users = await allQuery(
         db,
-        `SELECT id, email, full_name, role, department, is_active, must_change_password, created_at
+        `SELECT id, email, full_name, role, department, is_active, must_change_password, is_verified, created_at
          FROM users ORDER BY created_at DESC`,
       );
       res.json(users);
@@ -30,7 +32,7 @@ module.exports = (app) => {
     }
   });
 
-  // Create user — always sets must_change_password = 1
+  // Create user — sends verification email; user must verify before login
   router.post("/users", auth, isAdmin, async (req, res) => {
     const { email, password, full_name, role, department } = req.body;
     if (!email || !password || !full_name) {
@@ -49,12 +51,33 @@ module.exports = (app) => {
 
       const salt = await bcrypt.genSalt(10);
       const password_hash = await bcrypt.hash(password, salt);
+      const verificationToken = crypto.randomBytes(32).toString("hex");
+      const tokenExpiresAt = new Date(
+        Date.now() + 24 * 60 * 60 * 1000,
+      ).toISOString();
+
       const result = await runQuery(
         db,
-        `INSERT INTO users (email, password_hash, full_name, role, department, is_active, must_change_password)
-         VALUES (?, ?, ?, ?, ?, 1, 1)`,
-        [email, password_hash, full_name, role || "viewer", department || null],
+        `INSERT INTO users (email, password_hash, full_name, role, department, is_active, must_change_password, is_verified, verification_token, token_expires_at)
+         VALUES (?, ?, ?, ?, ?, 1, 1, 0, ?, ?)`,
+        [
+          email,
+          password_hash,
+          full_name,
+          role || "viewer",
+          department || null,
+          verificationToken,
+          tokenExpiresAt,
+        ],
       );
+
+      let emailSent = false;
+      try {
+        await sendVerificationEmail(email, verificationToken);
+        emailSent = true;
+      } catch (emailErr) {
+        console.error("Failed to send verification email:", emailErr);
+      }
 
       await runQuery(
         db,
@@ -62,7 +85,13 @@ module.exports = (app) => {
         [req.user.id, "admin_created_user", email, req.ip],
       );
 
-      res.json({ message: "User created successfully", userId: result.lastID });
+      res.json({
+        message: emailSent
+          ? "User created. A verification email has been sent."
+          : "User created, but the verification email could not be sent. Use Resend Verification from the admin panel.",
+        userId: result.lastID,
+        emailSent,
+      });
     } catch (err) {
       console.error(err);
       res.status(500).json({ message: "Server error" });
@@ -80,6 +109,35 @@ module.exports = (app) => {
         [full_name, role, department || null, is_active ? 1 : 0, req.params.id],
       );
       res.json({ message: "User updated" });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  router.delete("/users/:id", auth, isAdmin, async (req, res) => {
+    if (String(req.user.id) === String(req.params.id)) {
+      return res.status(400).json({ message: "You cannot delete your own admin account" });
+    }
+
+    try {
+      const targetUser = await getQuery(
+        db,
+        "SELECT id, email FROM users WHERE id = ?",
+        [req.params.id],
+      );
+      if (!targetUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      await runQuery(db, "DELETE FROM users WHERE id = ?", [req.params.id]);
+      await runQuery(
+        db,
+        "INSERT INTO audit_log (user_id, action, detail, ip_address) VALUES (?, ?, ?, ?)",
+        [req.user.id, "admin_deleted_user", targetUser.email, req.ip],
+      );
+
+      res.json({ message: "User deleted successfully" });
     } catch (err) {
       console.error(err);
       res.status(500).json({ message: "Server error" });
@@ -121,6 +179,46 @@ module.exports = (app) => {
     } catch (err) {
       console.error(err);
       res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Resend verification email for an unverified user
+  router.post("/users/:id/resend-verification", auth, isAdmin, async (req, res) => {
+    try {
+      const user = await getQuery(
+        db,
+        "SELECT id, email, is_verified FROM users WHERE id = ? AND is_active = 1",
+        [req.params.id],
+      );
+      if (!user) return res.status(404).json({ message: "User not found" });
+      if (user.is_verified === 1) {
+        return res.status(400).json({ message: "Email already verified" });
+      }
+
+      const newToken = crypto.randomBytes(32).toString("hex");
+      const newExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      await runQuery(
+        db,
+        "UPDATE users SET verification_token = ?, token_expires_at = ? WHERE id = ?",
+        [newToken, newExpiry, user.id],
+      );
+
+      await sendVerificationEmail(user.email, newToken);
+
+      await runQuery(
+        db,
+        "INSERT INTO audit_log (user_id, action, detail, ip_address) VALUES (?, ?, ?, ?)",
+        [req.user.id, "admin_resend_verification", user.email, req.ip],
+      );
+
+      res.json({ message: `Verification email sent to ${user.email}` });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({
+        message: err.message?.includes("Invalid login")
+          ? "Email could not be sent. Check EMAIL_USER and EMAIL_PASS in backend/.env"
+          : "Failed to send verification email",
+      });
     }
   });
 

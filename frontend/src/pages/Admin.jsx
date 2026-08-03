@@ -101,7 +101,7 @@ const Admin = () => {
         flash("User updated");
       } else {
         await axios.post(`${API_URL}/admin/users`, userForm, authHeader);
-        flash("User created. They must change their password on first login.");
+        flash("User created. A verification email has been sent — they must verify before logging in.");
       }
       setUserForm(emptyUserForm);
       setEditingUserId(null);
@@ -135,6 +135,44 @@ const Admin = () => {
       fetchUsers();
     } catch (err) {
       flash(err.response?.data?.message || "Reset failed", true);
+    }
+  };
+
+  const resendVerification = async (u) => {
+    try {
+      const res = await axios.post(
+        `${API_URL}/admin/users/${u.id}/resend-verification`,
+        {},
+        authHeader,
+      );
+      flash(res.data.message);
+      fetchUsers();
+    } catch (err) {
+      flash(err.response?.data?.message || "Could not send verification email", true);
+    }
+  };
+
+  const deleteUser = async (u) => {
+    if (u.id === user?.id) {
+      flash("You cannot delete your own admin account", true);
+      return;
+    }
+    if (!window.confirm(`Delete ${u.email}? This action cannot be undone.`)) return;
+
+    try {
+      const res = await axios.delete(`${API_URL}/admin/users/${u.id}`, authHeader);
+      flash(res.data.message);
+      if (selectedUser?.id === u.id) {
+        setSelectedUser(null);
+        setAssignedIds(new Set());
+      }
+      if (editingUserId === u.id) {
+        setEditingUserId(null);
+        setUserForm(emptyUserForm);
+      }
+      fetchUsers();
+    } catch (err) {
+      flash(err.response?.data?.message || "Could not delete user", true);
     }
   };
 
@@ -268,10 +306,15 @@ const Admin = () => {
                       <td>
                         {u.is_active ? "Active" : "Disabled"}
                         {u.must_change_password ? <><br /><small>⚠ pending pw change</small></> : null}
+                        {u.is_verified === 0 ? <><br /><small style={{ color: "#b45309" }}>✉ not verified</small></> : null}
                       </td>
                       <td style={{ whiteSpace: "nowrap" }}>
                         <button className="btn btn-muted" style={{ padding: "0.3rem 0.6rem", marginRight: "0.4rem" }} onClick={() => startEditUser(u)}>Edit</button>
-                        <button className="btn btn-muted" style={{ padding: "0.3rem 0.6rem" }} onClick={() => setResetTargetUser(u)}>Reset PW</button>
+                        <button className="btn btn-muted" style={{ padding: "0.3rem 0.6rem", marginRight: "0.4rem" }} onClick={() => setResetTargetUser(u)}>Reset PW</button>
+                        {u.is_verified === 0 && (
+                          <button className="btn btn-muted" style={{ padding: "0.3rem 0.6rem", marginRight: "0.4rem" }} onClick={() => resendVerification(u)}>Resend Email</button>
+                        )}
+                        <button className="btn" style={{ padding: "0.3rem 0.6rem", background: "#dc3545", color: "#fff" }} onClick={() => deleteUser(u)}>Delete</button>
                       </td>
                     </tr>
                   ))}
@@ -344,7 +387,7 @@ const Admin = () => {
               </div>
               {!editingUserId && (
                 <p style={{ fontSize: "0.82rem", color: "var(--ims-gray-700)", marginTop: "0.6rem" }}>
-                  The user will be required to set their own password on first login.
+                  A verification email will be sent. The user must verify their email before logging in, then set their own password on first login.
                 </p>
               )}
             </form>

@@ -4,64 +4,79 @@ const jwt = require("jsonwebtoken");
 const router = express.Router();
 const auth = require("../middleware/auth");
 
+// At the top, add require for crypto and the email service
+const crypto = require('crypto');
+const { sendVerificationEmail } = require('../utils/emailService');
+
+// --- Helper to generate verification token (expires in 24h) ---
+const generateVerificationToken = () => {
+  return {
+    token: crypto.randomBytes(32).toString('hex'),
+    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+  };
+};
+
 module.exports = (app) => {
   const { runQuery, getQuery } = app.locals;
   const db = app.locals.db;
 
   // ── REGISTER (admin-only in practice; route kept for flexibility) ──────────
-  router.post("/register", async (req, res) => {
-    const { email, password, full_name, role, department } = req.body;
-    if (!email || !password) {
-      return res
-        .status(400)
-        .json({ message: "Email and password are required" });
-    }
+router.post("/register", async (req, res) => {
+  const { email, password, full_name, role, department } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ message: "Email and password are required" });
+  }
+  try {
+    const existing = await getQuery(
+      db,
+      "SELECT id FROM users WHERE email = ?",
+      [email],
+    );
+    if (existing)
+      return res.status(400).json({ message: "User already exists" });
+
+    const salt = await bcrypt.genSalt(10);
+    const password_hash = await bcrypt.hash(password, salt);
+
+    // Generate verification token (expires in 24h)
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+    const tokenExpiresAt = new Date(
+      Date.now() + 24 * 60 * 60 * 1000,
+    ).toISOString();
+
+    const result = await runQuery(
+      db,
+      `INSERT INTO users (email, password_hash, full_name, role, department, is_active, must_change_password, is_verified, verification_token, token_expires_at)
+       VALUES (?, ?, ?, ?, ?, 1, 1, 0, ?, ?)`,
+      [
+        email,
+        password_hash,
+        full_name,
+        role || "viewer",
+        department,
+        verificationToken,
+        tokenExpiresAt,
+      ],
+    );
+
+    // Send verification email (don't block on error, but log it)
     try {
-      const existing = await getQuery(
-        db,
-        "SELECT id FROM users WHERE email = ?",
-        [email],
-      );
-      if (existing)
-        return res.status(400).json({ message: "User already exists" });
-
-      const salt = await bcrypt.genSalt(10);
-      const password_hash = await bcrypt.hash(password, salt);
-      const result = await runQuery(
-        db,
-        `INSERT INTO users (email, password_hash, full_name, role, department, is_active, must_change_password)
-         VALUES (?, ?, ?, ?, ?, 1, 1)`,
-        [email, password_hash, full_name, role || "viewer", department],
-      );
-
-      const token = jwt.sign(
-        {
-          id: result.lastID,
-          email,
-          role: role || "viewer",
-          department: department || null,
-          must_change_password: true,
-        },
-        process.env.JWT_SECRET,
-        { expiresIn: "24h" },
-      );
-
-      res.json({
-        token,
-        user: {
-          id: result.lastID,
-          email,
-          role: role || "viewer",
-          department,
-          must_change_password: true,
-        },
-      });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ message: "Server error" });
+      await sendVerificationEmail(email, verificationToken);
+    } catch (emailErr) {
+      console.error("Failed to send verification email:", emailErr);
     }
-  });
 
+    // Do NOT issue a token yet – user must verify email first.
+    res.json({
+      message:
+        "Registration successful. Please check your email to verify your account before logging in.",
+      userId: result.lastID,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
   // ── LOGIN ──────────────────────────────────────────────────────────────────
   router.post("/login", async (req, res) => {
     const { email, password } = req.body;
@@ -73,7 +88,7 @@ module.exports = (app) => {
     try {
       const user = await getQuery(
         db,
-        `SELECT id, email, password_hash, role, department, full_name, must_change_password
+        `SELECT id, email, password_hash, role, department, full_name, must_change_password,is_verified
          FROM users WHERE email = ? AND is_active = 1`,
         [email],
       );
@@ -85,6 +100,14 @@ module.exports = (app) => {
       if (!isMatch)
         return res.status(401).json({ message: "Invalid credentials" });
 
+      // Check if user's email is verified
+      if (user.is_verified !== 1) {
+        return res.status(403).json({
+          message:
+            "Please verify your email before logging in. Check your inbox for the verification link.",
+          needsVerification: true,
+        });
+      }
       // Audit log
       await runQuery(
         db,
@@ -127,6 +150,76 @@ module.exports = (app) => {
       res.status(500).json({ message: "Server error" });
     }
   });
+
+
+router.get("/verify-email", async (req, res) => {
+  const { token } = req.query;
+  if (!token)
+    return res.status(400).json({ message: "Verification token missing" });
+
+  try {
+    const user = await getQuery(
+      db,
+      "SELECT id, verification_token, token_expires_at FROM users WHERE verification_token = ?",
+      [token],
+    );
+    if (!user)
+      return res.status(400).json({ message: "Invalid or expired token" });
+
+    const now = new Date();
+    const expiresAt = new Date(user.token_expires_at);
+    if (now > expiresAt) {
+      return res
+        .status(400)
+        .json({ message: "Token expired. Request a new verification email." });
+    }
+
+    // Mark user as verified and clear token
+    await runQuery(
+      db,
+      "UPDATE users SET is_verified = 1, verification_token = NULL, token_expires_at = NULL WHERE id = ?",
+      [user.id],
+    );
+
+    res.json({ message: "Email verified successfully! You can now log in." });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
+router.post("/resend-verification", async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ message: "Email is required" });
+
+  try {
+    const user = await getQuery(
+      db,
+      "SELECT id, email, is_verified FROM users WHERE email = ? AND is_active = 1",
+      [email],
+    );
+    if (!user) return res.status(404).json({ message: "User not found" });
+    if (user.is_verified === 1)
+      return res.status(400).json({ message: "Email already verified" });
+
+    // Generate new token
+    const newToken = crypto.randomBytes(32).toString("hex");
+    const newExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    await runQuery(
+      db,
+      "UPDATE users SET verification_token = ?, token_expires_at = ? WHERE id = ?",
+      [newToken, newExpiry, user.id],
+    );
+
+    await sendVerificationEmail(email, newToken);
+    res.json({ message: "Verification email resent. Check your inbox." });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 
   // ── VERIFY token ───────────────────────────────────────────────────────────
   router.get("/verify", async (req, res) => {

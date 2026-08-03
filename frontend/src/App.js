@@ -1,9 +1,11 @@
 import React from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import Login from "./pages/Login";
 import Admin from "./pages/Admin";
 import ChangePassword from "./pages/ChangePassword";
+import VerifyEmail from "./pages/VerifyEmail";
+import Register from "./pages/Register";
 import NavBar from "./components/NavBar/NavBar";
 import Footer from "./components/Footer/Footer";
 import "./App.css";
@@ -71,24 +73,32 @@ function App() {
     return <div className="loading-screen">Loading...</div>;
   }
 
-  if (!user) {
-    return <Login />;
-  }
-
-  // Force password change before anything else
-  if (user.must_change_password) {
-    return <ChangePassword />;
-  }
-
+  // Public routes available whether logged in or not
   return (
-    <div className="app-shell">
-      <NavBar />
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/admin" element={<Admin />} />
-      </Routes>
-      <Footer />
-    </div>
+    <Routes>
+      <Route path="/verify-email" element={<VerifyEmail />} />
+      <Route path="/register" element={<Register />} />
+      <Route
+        path="/*"
+        element={
+          !user ? (
+            <Login />
+          ) : user.must_change_password ? (
+            <ChangePassword />
+          ) : (
+            <div className="app-shell">
+              <NavBar />
+              <Routes>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/admin" element={<Admin />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+              <Footer />
+            </div>
+          )
+        }
+      />
+    </Routes>
   );
 }
 

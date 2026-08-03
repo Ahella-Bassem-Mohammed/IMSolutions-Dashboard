@@ -1,7 +1,7 @@
 -- IMSolutions Dashboard — SQLite schema
 -- Run once to create / upgrade the database
 -- Dashboard visibility model: explicit per-user assignment only.
--- admin / top_management roles see everything; everyone else sees
+-- admin / top_management roles see everything - everyone else sees
 -- only dashboards assigned to them via user_dashboard_access.
 
 CREATE TABLE IF NOT EXISTS users (
