@@ -56,8 +56,8 @@ const buildCandidates = [
   path.join(__dirname, "../frontend/build"),
   path.join(__dirname, "../build"),
 ];
-const buildPath = buildCandidates.find((p) => fs.existsSync(p));
-if (buildPath) {
+const buildPath = path.join(__dirname, "public");
+if (fs.existsSync(buildPath)) {
   app.use(express.static(buildPath));
   app.get("*", (req, res, next) => {
     if (req.path.startsWith("/api")) return next();
