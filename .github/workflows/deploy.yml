@@ -6,49 +6,20 @@ on:
 
 jobs:
   FTP-Deploy:
-    name: Node FTP Deploy
+    name: Fail-Safe Deployment
     runs-on: ubuntu-latest
     steps:
     - name: Get latest code
       uses: actions/checkout@v4
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
+    - name: Sync Files to cPanel
+      uses: AkaSaito/ftp-deploy@v1
       with:
-        node-version: '24' # Uses the latest supported Node runner version
-
-    - name: Install Deployment Helper
-      run: npm install ftp-deploy
-
-    - name: Run Deployment Script
-      uses: actions/github-script@v7
-      with:
-        script: |
-          const FtpDeploy = require('ftp-deploy');
-          const ftpDeploy = new FtpDeploy();
-          
-          const config = {
-              user: process.env.FTP_USERNAME,
-              password: process.env.FTP_PASSWORD,
-              host: process.env.FTP_SERVER,
-              port: 21,
-              protocol: 'ftp',
-              // Fixes the __dirname error by using the root workspace path
-              localRoot: process.env.GITHUB_WORKSPACE + '/backend',
-              remoteRoot: '/repositories/IMSolutions-Dashboard/backend/',
-              include: ['*', '**/*'],
-              exclude: [],
-              deleteRemote: false,
-              forcePasv: true
-          };
-          
-          ftpDeploy.deploy(config)
-              .then(res => console.log('Deployment successful:', res))
-              .catch(err => {
-                  console.error('Deployment failed:', err);
-                  core.setFailed(err.message);
-              });
-      env:
-        FTP_SERVER: ${{ secrets.FTP_SERVER }}
-        FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
-        FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+        username: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        server: ${{ secrets.FTP_SERVER }}
+        # Explicit configurations to break through rigid cPanel firewalls
+        port: 21
+        local-dir: ./backend/
+        remote-dir: /repositories/IMSolutions-Dashboard/backend/
+        passive: true
