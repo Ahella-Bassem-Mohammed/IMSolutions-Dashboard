@@ -15,7 +15,7 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
-        node-node-version: '20'
+        node-version: '24' # Uses the latest supported Node runner version
 
     - name: Install Deployment Helper
       run: npm install ftp-deploy
@@ -32,12 +32,14 @@ jobs:
               password: process.env.FTP_PASSWORD,
               host: process.env.FTP_SERVER,
               port: 21,
-              localRoot: __dirname + '/backend',
+              protocol: 'ftp',
+              // Fixes the __dirname error by using the root workspace path
+              localRoot: process.env.GITHUB_WORKSPACE + '/backend',
               remoteRoot: '/repositories/IMSolutions-Dashboard/backend/',
               include: ['*', '**/*'],
               exclude: [],
               deleteRemote: false,
-              forcePasv: true // Pure JS handles cPanel's custom PASV quirks safely
+              forcePasv: true
           };
           
           ftpDeploy.deploy(config)
